@@ -1,0 +1,16 @@
+{
+  "name": "@snippet/promises-a-plus",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./dist && tsc",
+    "test": "pnpm build && node ./dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "promises-aplus-tests": "^2.1.2"
+  },
+  "type": "commonjs"
+}
