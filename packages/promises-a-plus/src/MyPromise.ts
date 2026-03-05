@@ -50,91 +50,98 @@ class MyPromise<T = any> {
   constructor(executor: (resolve: Resolve<T>, reject: Reject) => void) {
     try {
       executor(this._resolve.bind(this), this._reject.bind(this));
-    } catch (error) {
-      this._reject(error);
+    } catch (e) {
+      this._reject(e);
     }
   }
 
-  // 2.3 The Promise Resolution Procedured
-
   /**
-   * resolve promise
+   * The Promise Resolution Procedure
+   *
    * @param x
    * @returns
    */
   private _resolve(x: any): void {
-    // 2.1.2.1 & 2.1.3.1 - State must be pending to transition
+    // 2.1.2 fulfilled 时
+    // 2.1.2.1 promise 不能转换为其他状态
+    // 2.1.3 rejected 时
+    // 2.1.3.1 promise 不能转换为其他状态
     if (this._state !== PromiseState.PENDING) return;
 
-    // 2.3.1 If promise and x refer to the same object, reject promise with a TypeError as the reason.
+    // 2.3.1 如果 promise 和 x 指向同一个对象，则使用 TypeError 作为 reason，reject promise
+    // 如果不 reject promise，则会导致无限循环
     if (x === this) {
       return this._reject(new TypeError("Chaining cycle detected for promise"));
     }
 
-    // 2.3.2 If x is a promise, adopt its state
-    // 如果 x 是一个 promise，则使用 x 的 state
+    // 2.3.2 如果 x 是一个 promise，则使用 x 的状态
     if (x instanceof MyPromise) {
-      // Optimization: if x is a MyPromise, we can just hook into it directly
+      // 如果 x (一个 promise) 是 pending，则 promise 必须保持 pending，直到 x 被 resolve 或 reject
       if (x._state === PromiseState.PENDING) {
         x.then(
           (v: any) => this._resolve(v),
           (r: any) => this._reject(r),
         );
+        // 如果 x (一个 promise) 是 fulfilled，则 promise 也 fulfilled，value 与 x 的 value 相同
       } else if (x._state === PromiseState.FULFILLED) {
         this._fulfill(x._value);
       } else {
+        // 如果 x (一个 promise) 是 rejected，则 promise 也 rejected，reason 与 x 的 reason 相同
         this._reject(x._reason);
       }
       return;
     }
 
-    // 2.3.3 否则，如果 x 是一个对象或函数，
+    // 2.3.3 如果 x 是一个对象或函数
     if (x !== null && (typeof x === "object" || typeof x === "function")) {
       let then;
       try {
-        // 2.3.3.1 then = x.then
+        // 2.3.3.1 则令 then = x.then
         then = x.then;
-      } catch (error) {
+      } catch (e) {
         // 2.3.3.2 如果获取 x.then 导致抛出异常 e
-        // 使用 e 作为 reason，reject promise
-        return this._reject(error);
+        // 则使用 e 作为 reason，reject promise
+        return this._reject(e);
       }
 
       if (typeof then === "function") {
-        // 2.3.3.3 如果 then 是函数, call it with x as this, first argument resolvePromise,
-        // and second argument rejectPromise
-        // 则使用 x 作为第一个参数 resolvePromise
-        // 第二个参数 rejectPromise
+        // 2.3.3.3 如果 then 是一个函数
+        // 则使用 x 作为 this 调用 then 方法
+        // 第 1 个参数是 resolvePromise，第 2 个参数是 rejectPromise
+
         let called = false;
-        try {
-          then.call(
-            x,
-            (y: any) => {
-              // 2.3.3.3.1 如果/当 resolvePromise 使用 y 调用，只想
-              if (called) return;
-              called = true;
-              this._resolve(y);
-            },
-            (r: any) => {
-              // 2.3.3.3.2 If/when rejectPromise is called with a reason r, reject promise with r.
-              if (called) return;
-              called = true;
-              this._reject(r);
-            },
-          );
-        } catch (error) {
-          // 2.3.3.3.4 If calling then throws an exception e,
-          // 2.3.3.3.4.1 If resolvePromise or rejectPromise have been called, ignore it.
+
+        // 2.3.3.3.1 如果调用 resolvePromise 并传递 v 时，则使用 v 作为 value，resolve promise
+        // 2.3.3.3.4.1 如果已调用 resolvePromise 或 rejectPromise，则忽略
+        const resolvePromise = (v: any) => {
           if (called) return;
-          // 2.3.3.3.4.2 Otherwise, reject promise with e as the reason.
-          this._reject(error);
+          called = true;
+          this._resolve(v);
+        };
+
+        // 2.3.3.3.2 如果调用 rejectPromise 并传递 reason 时，则使用 r 作为 reason，reject promise
+        // 2.3.3.3.4.1 如果已调用 resolvePromise 或 rejectPromise，则忽略
+        const rejectPromise = (r: any) => {
+          if (called) return;
+          called = true;
+          this._reject(r);
+        };
+
+        try {
+          then.call(x, resolvePromise, rejectPromise);
+        } catch (e) {
+          // 2.3.3.3.4 如果调用 then 方法时抛出异常 e
+          // 2.3.3.3.4.1 如果已调用 resolvePromise 或 rejectPromise，则忽略
+          if (called) return;
+          // 2.3.3.3.4.2 则使用 e 作为 reason，reject promise
+          this._reject(e);
         }
         return;
       }
     }
 
-    // 2.3.3.4 If then is not a function, fulfill promise with x.
-    // 2.3.4 If x is not an object or function, fulfill promise with x.
+    // 2.3.3.4 如果 then 不是一个函数，则使用 x 作为 value，resolve promise
+    // 2.3.4 如果 x 不是一个对象或函数，则使用 x 作为 value，resolve promise
     this._fulfill(x);
   }
 
@@ -144,8 +151,8 @@ class MyPromise<T = any> {
     this._value = value;
 
     const callbacks = this._onFulfilledCallbacks;
-    this._onFulfilledCallbacks = []; // clear ref
-    this._onRejectedCallbacks = []; // clear ref
+    this._onFulfilledCallbacks = [];
+    this._onRejectedCallbacks = [];
 
     for (const callback of callbacks) {
       callback();
@@ -174,7 +181,7 @@ class MyPromise<T = any> {
     onFulfilled?: OnFulfilled<T, TResult1>,
     onRejected?: OnRejected<TResult2>,
   ): MyPromise<TResult1 | TResult2> {
-    // 2.2.7 then 方法必须返回一个 promise, 称为 promise2
+    // 2.2.7 then 方法返回一个 promise, 称为 promise2
     // then 方法的调用者称为 promise1
     return new MyPromise((resolve, reject) => {
       // 2.2.4 onFulfilled or onRejected must not be called until the execution context stack
@@ -189,7 +196,7 @@ class MyPromise<T = any> {
           try {
             // 2.2.1.1 如果 onFulfilled 不是函数，则忽略
             // 2.2.7.3 如果 onFulfilled 不是函数, 且 promise1 是 fulfilled
-            // 则 promise2 必须也 fulfilled，使用 promise1 的 value
+            // 则 then 方法也返回一个 fulfilled 的 promise2，value 与 promise1 的 value 相同
             if (typeof onFulfilled !== "function") {
               resolve(this._value);
             } else {
@@ -200,12 +207,12 @@ class MyPromise<T = any> {
               // 2.2.5 onFulfilled 和 onRejected 必须作为函数调用（即 this === undefined）
               const x = onFulfilled.call(undefined, this._value);
               // 2.2.7.1 如果 onFulfilled 或 onRejected 返回值 x
-              // 则使用 resolve(x) resolve then 方法返回的 promise2
+              // 则 then 方法使用 resolve(x) 返回一个 fulfilled 的 promise2，value 为 x
               resolve(x);
             }
           } catch (e) {
             // 2.2.7.2 如果 onFulfilled 或 onRejected 抛出异常 e
-            // 则使用 reject(e) reject then 方法返回的 promise2
+            // 则 then 方法使用 reject(e) 返回一个 rejected 的 promise2，reason 为 e
             reject(e);
           }
         });
@@ -216,7 +223,7 @@ class MyPromise<T = any> {
           try {
             // 2.2.1.2 如果 onRejected 不是函数，则忽略
             // 2.2.7.4 如果 onRejected 不是函数，且 promise1 是 rejected
-            // 则 promise2 必须也 rejected，使用 promise1 的 reason
+            // 则 then 方法也返回一个 rejected 的 promise2，reason 与 promise1 的 reason 相同
             if (typeof onRejected !== "function") {
               reject(this._reason);
             } else {
@@ -228,12 +235,15 @@ class MyPromise<T = any> {
               const x = onRejected.call(undefined, this._reason);
               resolve(x);
             }
-          } catch (error) {
-            reject(error);
+          } catch (e) {
+            // 2.2.7.2 如果 onFulfilled 或 onRejected 抛出异常 e
+            // 则 then 方法使用 reject(e) 返回一个 rejected 的 promise2，reason 为 e
+            reject(e);
           }
         });
       };
 
+      //#region
       if (this._state === PromiseState.FULFILLED) {
         // 2.2.2.1 必须在 promise fulfilled 后调用 onFulfilled，且使用 promise 的 value 作为第一个参数
         handleFulfilled();
@@ -242,22 +252,23 @@ class MyPromise<T = any> {
         handleRejected();
       } else {
         // 2.2.6 一个 promise 的 then 方法可以多次调用
-        // 2.2.6.1 当 promise fulfilled 时，所有 onFulfilled 回调必须按序执行
+        // 2.2.6.1 当 promise fulfilled 时，所有 onFulfilled 回调 (onFulfilledCallbacks) 按顺序执行
         this._onFulfilledCallbacks.push(handleFulfilled);
-        // 2.2.6.2 当 promise rejected 时，所有 onRejected 回调必须按序执行
+        // 2.2.6.2 当 promise rejected 时，所有 onRejected 回调 (onRejectedCallbacks) 按顺序执行
         this._onRejectedCallbacks.push(handleRejected);
       }
+      //#endregion
     });
   }
 
-  // 2.2.7.3 catch is sugar for then(undefined, onRejected)
   public catch<TResult = never>(
     onRejected?: OnRejected<TResult>,
   ): MyPromise<T | TResult> {
     return this.then(undefined, onRejected);
   }
 
-  // Static methods for convenience and requirement
+  // TODO finally
+
   static resolve(value: any): MyPromise<any> {
     return new MyPromise((resolve) => resolve(value));
   }
@@ -266,34 +277,22 @@ class MyPromise<T = any> {
     return new MyPromise((_, reject) => reject(reason));
   }
 
-  // Optimize Promise.all for large arrays
   static all(promises: Iterable<any>): MyPromise<any[]> {
     return new MyPromise((resolve, reject) => {
       const input = Array.isArray(promises) ? promises : Array.from(promises);
       const len = input.length;
-
       if (len === 0) {
         resolve([]);
         return;
       }
-
       const results: any[] = new Array(len);
       let completed = 0;
-
-      // Use a counter to track completion
-      // We need to preserve order
       for (let i = 0; i < len; i++) {
         const item = input[i];
-
-        // Optimization: Handle primitive values synchronously without creating promises
         if (
           item !== null &&
           (typeof item === "object" || typeof item === "function")
         ) {
-          // It's an object or function, so it MIGHT be a thenable.
-          // Let MyPromise.resolve handle it (including thenable check and state adoption).
-          // If item is MyPromise, MyPromise.resolve(item) returns it directly (no wrapper).
-          // If item is thenable, it creates a wrapper.
           MyPromise.resolve(item).then(
             (value) => {
               results[i] = value;
@@ -303,13 +302,10 @@ class MyPromise<T = any> {
               }
             },
             (reason) => {
-              // First rejection rejects all
               reject(reason);
             },
           );
         } else {
-          // Primitive value (number, string, boolean, undefined, symbol)
-          // Cannot be a thenable.
           results[i] = item;
           completed++;
           if (completed === len) {
@@ -320,6 +316,10 @@ class MyPromise<T = any> {
     });
   }
 
+  // TODO allSettled
+
+  // TODO any
+
   static race(promises: Iterable<any>): MyPromise<any> {
     return new MyPromise((resolve, reject) => {
       const input = Array.isArray(promises) ? promises : Array.from(promises);
@@ -328,6 +328,10 @@ class MyPromise<T = any> {
       }
     });
   }
+
+  // TODO try
+
+  // TODO withResolvers
 }
 
 export default MyPromise;
