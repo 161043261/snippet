@@ -267,7 +267,20 @@ class MyPromise<T = any> {
     return this.then(undefined, onRejected);
   }
 
-  // TODO finally
+  public finally(onFinally?: (() => void) | undefined | null): MyPromise<T> {
+    return this.then(
+      (value) =>
+        MyPromise.resolve(
+          typeof onFinally === "function" ? onFinally() : onFinally,
+        ).then(() => value),
+      (reason) =>
+        MyPromise.resolve(
+          typeof onFinally === "function" ? onFinally() : onFinally,
+        ).then(() => {
+          throw reason;
+        }),
+    );
+  }
 
   static resolve(value: any): MyPromise<any> {
     return new MyPromise((resolve) => resolve(value));
@@ -316,9 +329,67 @@ class MyPromise<T = any> {
     });
   }
 
-  // TODO allSettled
+  static allSettled(promises: Iterable<any>): MyPromise<any[]> {
+    return new MyPromise((resolve) => {
+      const input = Array.isArray(promises) ? promises : Array.from(promises);
+      const len = input.length;
+      const results: any[] = new Array(len);
+      if (len === 0) {
+        resolve([]);
+        return;
+      }
 
-  // TODO any
+      let completed = 0;
+      for (let i = 0; i < len; i++) {
+        const item = input[i];
+        MyPromise.resolve(item).then(
+          (value) => {
+            results[i] = { status: "fulfilled", value };
+            completed++;
+            if (completed === len) {
+              resolve(results);
+            }
+          },
+          (reason) => {
+            results[i] = { status: "rejected", reason };
+            completed++;
+            if (completed === len) {
+              resolve(results);
+            }
+          },
+        );
+      }
+    });
+  }
+
+  static any(promises: Iterable<any>): MyPromise<any> {
+    return new MyPromise((resolve, reject) => {
+      const input = Array.isArray(promises) ? promises : Array.from(promises);
+      const len = input.length;
+      const errors: any[] = new Array(len);
+      if (len === 0) {
+        reject(new AggregateError([], "All promises were rejected"));
+        return;
+      }
+
+      let rejectedCount = 0;
+      for (let i = 0; i < len; i++) {
+        const item = input[i];
+        MyPromise.resolve(item).then(
+          (value) => {
+            resolve(value);
+          },
+          (reason) => {
+            errors[i] = reason;
+            rejectedCount++;
+            if (rejectedCount === len) {
+              reject(new AggregateError(errors, "All promises were rejected"));
+            }
+          },
+        );
+      }
+    });
+  }
 
   static race(promises: Iterable<any>): MyPromise<any> {
     return new MyPromise((resolve, reject) => {
@@ -329,9 +400,21 @@ class MyPromise<T = any> {
     });
   }
 
-  // TODO try
+  static try<T>(func: () => T | PromiseLike<T>): MyPromise<T> {
+    return new MyPromise((resolve) => {
+      resolve(func());
+    });
+  }
 
-  // TODO withResolvers
+  static withResolvers<T>() {
+    let resolve!: Resolve<T>;
+    let reject!: Reject;
+    const promise = new MyPromise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  }
 }
 
 export default MyPromise;
