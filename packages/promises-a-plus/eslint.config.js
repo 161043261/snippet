@@ -14,12 +14,14 @@ export default defineConfig(
       globals: {
         ...globals.node,
       },
+
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
   {
-    ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
-    ],
+    ignores: ["**/dist/**", "**/node_modules/**"],
   },
 );
