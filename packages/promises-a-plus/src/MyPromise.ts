@@ -292,16 +292,16 @@ class MyPromise<T = any> {
 
   static all(promises: Iterable<any>): MyPromise<any[]> {
     return new MyPromise((resolve, reject) => {
-      const input = Array.isArray(promises) ? promises : Array.from(promises);
-      const len = input.length;
-      if (len === 0) {
+      const pArray = Array.isArray(promises) ? promises : Array.from(promises);
+      const n = pArray.length;
+      if (n === 0) {
         resolve([]);
         return;
       }
-      const results: any[] = new Array(len);
+      const results: any[] = new Array(n);
       let completed = 0;
-      for (let i = 0; i < len; i++) {
-        const item = input[i];
+      for (let i = 0; i < n; i++) {
+        const item = pArray[i];
         if (
           item !== null &&
           (typeof item === "object" || typeof item === "function")
@@ -310,7 +310,7 @@ class MyPromise<T = any> {
             (value) => {
               results[i] = value;
               completed++;
-              if (completed === len) {
+              if (completed === n) {
                 resolve(results);
               }
             },
@@ -321,7 +321,7 @@ class MyPromise<T = any> {
         } else {
           results[i] = item;
           completed++;
-          if (completed === len) {
+          if (completed === n) {
             resolve(results);
           }
         }
@@ -331,29 +331,29 @@ class MyPromise<T = any> {
 
   static allSettled(promises: Iterable<any>): MyPromise<any[]> {
     return new MyPromise((resolve) => {
-      const input = Array.isArray(promises) ? promises : Array.from(promises);
-      const len = input.length;
-      const results: any[] = new Array(len);
-      if (len === 0) {
+      const pArray = Array.isArray(promises) ? promises : Array.from(promises);
+      const n = pArray.length;
+      const results: any[] = new Array(n);
+      if (n === 0) {
         resolve([]);
         return;
       }
 
       let completed = 0;
-      for (let i = 0; i < len; i++) {
-        const item = input[i];
+      for (let i = 0; i < n; i++) {
+        const item = pArray[i];
         MyPromise.resolve(item).then(
           (value) => {
             results[i] = { status: "fulfilled", value };
             completed++;
-            if (completed === len) {
+            if (completed === n) {
               resolve(results);
             }
           },
           (reason) => {
             results[i] = { status: "rejected", reason };
             completed++;
-            if (completed === len) {
+            if (completed === n) {
               resolve(results);
             }
           },
@@ -364,17 +364,17 @@ class MyPromise<T = any> {
 
   static any(promises: Iterable<any>): MyPromise<any> {
     return new MyPromise((resolve, reject) => {
-      const input = Array.isArray(promises) ? promises : Array.from(promises);
-      const len = input.length;
-      const errors: any[] = new Array(len);
-      if (len === 0) {
+      const pArray = Array.isArray(promises) ? promises : Array.from(promises);
+      const n = pArray.length;
+      const errors: any[] = new Array(n);
+      if (n === 0) {
         reject(new AggregateError([], "All promises were rejected"));
         return;
       }
 
       let rejectedCount = 0;
-      for (let i = 0; i < len; i++) {
-        const item = input[i];
+      for (let i = 0; i < n; i++) {
+        const item = pArray[i];
         MyPromise.resolve(item).then(
           (value) => {
             resolve(value);
@@ -382,7 +382,7 @@ class MyPromise<T = any> {
           (reason) => {
             errors[i] = reason;
             rejectedCount++;
-            if (rejectedCount === len) {
+            if (rejectedCount === n) {
               reject(new AggregateError(errors, "All promises were rejected"));
             }
           },
@@ -393,16 +393,16 @@ class MyPromise<T = any> {
 
   static race(promises: Iterable<any>): MyPromise<any> {
     return new MyPromise((resolve, reject) => {
-      const input = Array.isArray(promises) ? promises : Array.from(promises);
-      for (const item of input) {
+      const pArray = Array.isArray(promises) ? promises : Array.from(promises);
+      for (const item of pArray) {
         MyPromise.resolve(item).then(resolve, reject);
       }
     });
   }
 
-  static try<T>(func: () => T | PromiseLike<T>): MyPromise<T> {
+  static try<T>(fn: () => T | PromiseLike<T>): MyPromise<T> {
     return new MyPromise((resolve) => {
-      resolve(func());
+      resolve(fn());
     });
   }
 
