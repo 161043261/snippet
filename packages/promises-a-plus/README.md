@@ -29,7 +29,7 @@
     - 2.2.3.1 必须在 promise rejected 后调用 onRejected，且使用 promise 的 reason 作为第一个参数
     - 2.2.3.2 在 promise rejected 前不能调用 onRejected
     - 2.2.3.3 onRejected 只能调用 1 次
-  - 2.2.4 onFulfilled 和 onRejected 可以使用 setTimeout, setImmediate 等宏任务实现, 也可以使用 queueMicrotask, process.nextTick 等微任务实现
+  - 2.2.4 onFulfilled 和 onRejected 必须异步执行，可以使用 setTimeout, setImmediate 等宏任务实现, 也可以使用 queueMicrotask, process.nextTick 等微任务实现
   - 2.2.5 onFulfilled 和 onRejected 必须作为函数调用（即 this === undefined）
   - 2.2.6 一个 promise 的 then 方法可以多次调用
     - 2.2.6.1 当 promise fulfilled 时，所有 onFulfilled 回调 (onFulfilledCallbacks) 按顺序执行
@@ -58,10 +58,10 @@
     - 2.3.3.4 如果 then 不是一个函数，则使用 x 作为 value，resolve promise
   - 2.3.4 如果 x 不是一个对象或函数，则使用 x 作为 value，resolve promise
 
-可以在[代码]中找到所有的对应代码
-
 ## QA
 
-什么是 Promise A+ 规范中的 promise1, promise2
+1. onFulfilled 和 onRejected 必须异步执行，可以使用 setTimeout, setImmediate 等宏任务实现, 也可以使用 queueMicrotask, process.nextTick 等微任务实现
+
+2. 什么是 Promise A+ 规范中的 promise1, promise2
 
 `promise2 = promise1.then(onFulfilled, onRejected)`
