@@ -18,7 +18,6 @@ const getWorker = (_worker: string, label: string): Worker => {
       });
     case "css":
     case "scss":
-    case "less":
       return new Worker(new URL("./worker/css.worker.ts", import.meta.url), {
         type: "module",
       });
@@ -33,13 +32,6 @@ const getWorker = (_worker: string, label: string): Worker => {
       return new Worker(new URL("./worker/ts.worker.ts", import.meta.url), {
         type: "module",
       });
-    case "flinksql":
-      return new Worker(
-        new URL("./worker/flinksql.worker.ts", import.meta.url),
-        {
-          type: "module",
-        },
-      );
     default:
       return new Worker(new URL("./worker/editor.worker.ts", import.meta.url), {
         type: "module",

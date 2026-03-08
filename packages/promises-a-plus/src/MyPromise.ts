@@ -76,17 +76,17 @@ class MyPromise<T = any> {
 
     // 2.3.2 如果 x 是一个 promise，则使用 x 的状态
     if (x instanceof MyPromise) {
-      // 如果 x (一个 promise) 是 pending，则 promise 必须保持 pending，直到 x 被 resolve 或 reject
+      // 2.3.2.1 如果 x (一个 promise) 是 pending，则 promise 必须保持 pending，直到 x 被 resolve 或 reject
       if (x._state === PromiseState.PENDING) {
         x.then(
           (v: any) => this._resolve(v),
           (r: any) => this._reject(r),
         );
-        // 如果 x (一个 promise) 是 fulfilled，则 promise 也 fulfilled，value 与 x 的 value 相同
+        // 2.3.2.2 如果 x (一个 promise) 是 fulfilled，则 promise 也 fulfilled，value 与 x 的 value 相同
       } else if (x._state === PromiseState.FULFILLED) {
         this._fulfill(x._value);
       } else {
-        // 如果 x (一个 promise) 是 rejected，则 promise 也 rejected，reason 与 x 的 reason 相同
+        // 2.3.2.3 如果 x (一个 promise) 是 rejected，则 promise 也 rejected，reason 与 x 的 reason 相同
         this._reject(x._reason);
       }
       return;
@@ -109,6 +109,9 @@ class MyPromise<T = any> {
         // 则使用 x 作为 this 调用 then 方法
         // 第 1 个参数是 resolvePromise，第 2 个参数是 rejectPromise
 
+        // 2.3.3.3.3 如果同时调用 resolvePromise 和 rejectPromise
+        // 或者对同一个参数进行多次调用
+        // 则第一次调用优先，后续调用都会被忽略
         let called = false;
 
         // 2.3.3.3.1 如果调用 resolvePromise 并传递 v 时，则使用 v 作为 value，resolve promise
@@ -133,7 +136,7 @@ class MyPromise<T = any> {
           // 2.3.3.3.4 如果调用 then 方法时抛出异常 e
           // 2.3.3.3.4.1 如果已调用 resolvePromise 或 rejectPromise，则忽略
           if (called) return;
-          // 2.3.3.3.4.2 则使用 e 作为 reason，reject promise
+          // 2.3.3.3.4.2 否则使用 e 作为 reason，reject promise
           this._reject(e);
         }
         return;
@@ -184,13 +187,7 @@ class MyPromise<T = any> {
     // 2.2.7 then 方法返回一个 promise, 称为 promise2
     // then 方法的调用者称为 promise1
     return new MyPromise((resolve, reject) => {
-      // 2.2.4 onFulfilled or onRejected must not be called until the execution context stack
-      // contains only platform code.
-      // onFulfilled 或 onRejected 必须在执行上下文栈仅包含平台代码之前调用
-      //
-      // 结论：promise.then 是微任务，使用 queueMicrotask
-      // [queueMicrotask](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/queueMicrotask)
-
+      // 2.2.4 onFulfilled 和 onRejected 可以使用 setTimeout, setImmediate 等宏任务实现, 也可以使用 queueMicrotask, process.nextTick 等微任务实现
       const handleFulfilled = () => {
         queueMicrotask(() => {
           try {
