@@ -266,20 +266,23 @@ class MyPromise<T = any> {
 
   public finally(onFinally?: (() => void) | undefined | null): MyPromise<T> {
     return this.then(
-      (value) =>
-        MyPromise.resolve(
-          typeof onFinally === "function" ? onFinally() : onFinally,
-        ).then(() => value),
-      (reason) =>
-        MyPromise.resolve(
-          typeof onFinally === "function" ? onFinally() : onFinally,
-        ).then(() => {
+      (value) => {
+        if (typeof onFinally !== "function") return value;
+        return MyPromise.resolve(onFinally()).then(() => value);
+      },
+      (reason) => {
+        if (typeof onFinally !== "function") throw reason;
+        return MyPromise.resolve(onFinally()).then(() => {
           throw reason;
-        }),
+        });
+      },
     );
   }
 
   static resolve(value: any): MyPromise<any> {
+    if (value instanceof MyPromise && value.constructor === MyPromise) {
+      return value;
+    }
     return new MyPromise((resolve) => resolve(value));
   }
 
@@ -298,30 +301,18 @@ class MyPromise<T = any> {
       const results: any[] = new Array(n);
       let completed = 0;
       for (let i = 0; i < n; i++) {
-        const item = pArray[i];
-        if (
-          item !== null &&
-          (typeof item === "object" || typeof item === "function")
-        ) {
-          MyPromise.resolve(item).then(
-            (value) => {
-              results[i] = value;
-              completed++;
-              if (completed === n) {
-                resolve(results);
-              }
-            },
-            (reason) => {
-              reject(reason);
-            },
-          );
-        } else {
-          results[i] = item;
-          completed++;
-          if (completed === n) {
-            resolve(results);
-          }
-        }
+        MyPromise.resolve(pArray[i]).then(
+          (value: any) => {
+            results[i] = value;
+            completed++;
+            if (completed === n) {
+              resolve(results);
+            }
+          },
+          (reason: any) => {
+            reject(reason);
+          },
+        );
       }
     });
   }
@@ -338,16 +329,15 @@ class MyPromise<T = any> {
 
       let completed = 0;
       for (let i = 0; i < n; i++) {
-        const item = pArray[i];
-        MyPromise.resolve(item).then(
-          (value) => {
+        MyPromise.resolve(pArray[i]).then(
+          (value: any) => {
             results[i] = { status: "fulfilled", value };
             completed++;
             if (completed === n) {
               resolve(results);
             }
           },
-          (reason) => {
+          (reason: any) => {
             results[i] = { status: "rejected", reason };
             completed++;
             if (completed === n) {
@@ -371,12 +361,11 @@ class MyPromise<T = any> {
 
       let rejectedCount = 0;
       for (let i = 0; i < n; i++) {
-        const item = pArray[i];
-        MyPromise.resolve(item).then(
-          (value) => {
+        MyPromise.resolve(pArray[i]).then(
+          (value: any) => {
             resolve(value);
           },
-          (reason) => {
+          (reason: any) => {
             errors[i] = reason;
             rejectedCount++;
             if (rejectedCount === n) {
