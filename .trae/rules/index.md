@@ -1,0 +1,4 @@
+- 本项目使用 pnpm 和 monorepo, 所有包都在 packages 目录下
+- 本项目使用 typescript，不要使用 javascript
+- 尽量少使用 any 和 as 类型断言
+- 文件名统一使用 kebab-case

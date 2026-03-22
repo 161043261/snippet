@@ -1,0 +1,11 @@
+{
+  "name": "@snippet/mini-react",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.30.3"
+}
