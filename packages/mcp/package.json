@@ -11,7 +11,8 @@
     "dev:server": "tsx src/index.ts",
     "build": "concurrently \"pnpm build:server\" \"pnpm build:client\"",
     "build:server": "tsc",
-    "build:client": "cd src/client && rollup -c"
+    "build:client": "cd src/client && rollup -c",
+    "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -23,11 +24,14 @@
     "@langchain/core": "^1.1.35",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "dotenv": "^16.6.1",
+    "i18next": "^25.10.3",
     "koa": "^3.1.2",
     "koa-static": "^5.0.0",
+    "lucide-react": "^0.577.0",
     "mongodb": "^7.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-i18next": "^16.6.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -36,6 +40,7 @@
     "@babel/preset-typescript": "^7.28.5",
     "@rollup/plugin-babel": "^7.0.0",
     "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.3.1",
     "@rollup/plugin-replace": "^6.0.3",
     "@rollup/plugin-typescript": "^11.1.6",
@@ -51,7 +56,10 @@
     "autocannon": "^7.15.0",
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
+    "daisyui": "^5.5.19",
     "postcss": "^8.5.8",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "rollup": "^4.60.0",
     "rollup-plugin-postcss": "^4.0.2",
     "tailwindcss": "^4.2.2",

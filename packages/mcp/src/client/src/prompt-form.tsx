@@ -1,23 +1,26 @@
 import { useState, useEffect, type ChangeEvent, type FC } from "react";
+import { useTranslation } from "react-i18next";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 
 export const PromptForm: FC = () => {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    if (status && status !== "Submitting...") {
+    if (status && status !== t("creating")) {
       const timer = setTimeout(() => {
         setStatus("");
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [status]);
+  }, [status, t]);
 
   const handleSubmit = async (e: ChangeEvent) => {
     e.preventDefault();
-    setStatus("Submitting...");
+    setStatus(t("creating"));
 
     try {
       const response = await fetch("/prompts", {
@@ -33,85 +36,109 @@ export const PromptForm: FC = () => {
       });
 
       if (response.ok) {
-        setStatus("Prompt created successfully!");
+        setStatus(t("success_message"));
         setName("");
         setDescription("");
         setContent("");
       } else {
         const data = await response.json();
-        setStatus(`Error: ${data.error || "Failed to create prompt"}`);
+        setStatus(
+          `${t("error_message")}: ${data.error || "Failed to create prompt"}`,
+        );
       }
     } catch (err) {
-      setStatus("Error: Network error");
+      setStatus(t("network_error"));
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white p-8 border border-gray-200 rounded-lg shadow-md w-full">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        Create New Prompt
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name
+    <div className="card bg-base-100 w-full shadow-xl shadow-orange-900/5 transition-shadow duration-300 hover:shadow-2xl">
+      <div className="card-body p-8 lg:p-12">
+        <h2 className="card-title text-base-content border-base-200 mb-8 border-b pb-4 text-3xl font-bold">
+          {t("form_title")}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <label className="form-control w-full">
+            <div className="label">
+              <span className="label-text text-base-content/80 font-semibold">
+                {t("prompt_name_label")}
+              </span>
+            </div>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="input input-bordered bg-base-100 w-full transition-colors"
+              placeholder={t("prompt_name_placeholder")}
+              required
+            />
           </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. code-reviewer"
-            required
-          />
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+          <label className="form-control w-full">
+            <div className="label">
+              <span className="label-text text-base-content/80 font-semibold">
+                {t("description_label")}
+              </span>
+            </div>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="input input-bordered bg-base-100 w-full transition-colors"
+              placeholder={t("description_placeholder")}
+              required
+            />
           </label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Description of the prompt"
-            required
-          />
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Content
+          <label className="form-control w-full">
+            <div className="label">
+              <span className="label-text text-base-content/80 font-semibold">
+                {t("content_label")}
+              </span>
+            </div>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="textarea textarea-bordered bg-base-100 h-40 w-full resize-y leading-relaxed transition-colors"
+              placeholder={t("content_placeholder")}
+              required
+            ></textarea>
           </label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32"
-            placeholder="The prompt content..."
-            required
-          />
-        </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-        >
-          Create Prompt
-        </button>
-      </form>
+          <div className="card-actions mt-4 justify-end">
+            <button
+              type="submit"
+              className={`btn btn-primary px-10 transition-transform hover:scale-105 ${
+                status === t("creating") ? "btn-disabled" : ""
+              }`}
+            >
+              {status === t("creating") ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : (
+                t("save_button")
+              )}
+            </button>
+          </div>
+        </form>
 
-      {status && (
-        <div
-          className={`mt-4 p-3 rounded-md ${
-            status.includes("Error")
-              ? "bg-red-50 text-red-500"
-              : "bg-green-50 text-green-500"
-          }`}
-        >
-          {status}
-        </div>
-      )}
+        {status && status !== t("creating") && (
+          <div
+            className={`alert mt-8 animate-[fade-in-up_0.3s_ease-out] ${
+              status.includes(t("error_message"))
+                ? "alert-error"
+                : "alert-success"
+            }`}
+          >
+            {status.includes(t("error_message")) ? (
+              <AlertCircle className="h-6 w-6 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-6 w-6 shrink-0" />
+            )}
+            <span className="font-medium">{status}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

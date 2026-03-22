@@ -5,6 +5,7 @@ import commonjs from "@rollup/plugin-commonjs";
 import postcss from "rollup-plugin-postcss";
 import replace from "@rollup/plugin-replace";
 import babel from "@rollup/plugin-babel";
+import json from "@rollup/plugin-json";
 
 export default defineConfig({
   input: "src/index.tsx",
@@ -20,6 +21,7 @@ export default defineConfig({
         process.env.NODE_ENV || "development",
       ),
     }),
+    json(),
     resolve({
       browser: true,
       extensions: [".js", ".jsx", ".ts", ".tsx"],

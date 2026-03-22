@@ -1,1 +1,22 @@
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes: cupcake, bumblebee, pastel;
+}
+
+@theme {
+  --color-primary-orange: #fff4e6; /* Very light orange */
+}
+
+:root {
+  font-family:
+    "Iosevka", Menlo, "Cascadia Code", "PingFang SC", "Microsoft YaHei",
+    monospace;
+}
+
+/* Override daisyUI input/textarea focus styles to use 1px orange border */
+.input:focus,
+.input:focus-within,
+.textarea:focus,
+.textarea:focus-within {
+  @apply border-orange-400 shadow-none outline-none;
+}

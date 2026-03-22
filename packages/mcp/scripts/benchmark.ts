@@ -1,11 +1,12 @@
 import autocannon from "autocannon";
-import { buildApp } from "../src/app";
+import { buildApp } from "../src/app.js";
 
 async function run() {
   try {
     const app = await buildApp();
-    await app.listen({ port: 3000, host: "0.0.0.0" });
-    console.log("Server started for benchmarking on port 3000");
+    const server = app.listen(3000, "0.0.0.0", () => {
+      console.log("Server started for benchmarking on port 3000");
+    });
 
     const instance = autocannon(
       {
@@ -27,7 +28,10 @@ async function run() {
           console.log(`Throughput (bytes/sec): ${result.throughput.average}`);
           console.log(`Total Requests: ${result.requests.total}`);
         }
-        app.close();
+        server.close();
+        if (app.mongoClient) {
+          app.mongoClient.close();
+        }
         process.exit(0);
       },
     );

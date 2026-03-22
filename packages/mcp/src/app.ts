@@ -13,9 +13,12 @@ const __dirname = path.dirname(__filename);
 export interface AppContext extends Koa.Context {
   db: Db;
 }
+export interface AppInstance extends Koa<Koa.DefaultState, AppContext> {
+  mongoClient: MongoClient;
+}
 
-export const buildApp = async () => {
-  const app = new Koa();
+export const buildApp = async (): Promise<AppInstance> => {
+  const app = new Koa<Koa.DefaultState, AppContext>() as AppInstance;
 
   // Setup MongoDB
   const defaultMongoUrl =
@@ -41,7 +44,7 @@ export const buildApp = async () => {
   app.use(mcpRouter.routes()).use(mcpRouter.allowedMethods());
 
   // Attach the mongo client so we can close it later if needed
-  (app as any).mongoClient = client;
+  app.mongoClient = client;
 
   return app;
 };
